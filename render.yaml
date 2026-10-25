@@ -1,0 +1,34 @@
+# Render Infrastructure as Code Blueprint for PhishShift
+# Enables automated one-click multi-service deployment on Render
+services:
+  # 1. Python Flask Backend Web Service
+  - type: web
+    name: phishshift-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_DEBUG
+        value: 0
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: SECRET_KEY
+        generateValue: true
+
+  # 2. React Vite Frontend Static Site
+  - type: static
+    name: phishshift-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: phishshift-backend
+          property: host

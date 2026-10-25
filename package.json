@@ -1,0 +1,11 @@
+{
+  "name": "phishshift-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PhishShift - Message Risk Scanner (College Mini Project 2)",
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "frontend": "npm --prefix frontend run dev",
+    "start": "npm --prefix frontend run preview"
+  }
+}
