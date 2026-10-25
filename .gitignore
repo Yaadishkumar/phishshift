@@ -6,8 +6,8 @@ yarn-error.log*
 
 # Production build artifacts
 dist/
-dist-ssr/
 frontend/dist/
+dist-ssr/
 build/
 
 # Python cache & compiled bytecode

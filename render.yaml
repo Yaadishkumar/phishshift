@@ -1,12 +1,10 @@
 # Render Infrastructure as Code Blueprint for PhishShift
-# Enables automated one-click multi-service deployment on Render
+# Single-service full-stack deployment: Flask serves both the API and the React SPA
 services:
-  # 1. Python Flask Backend Web Service
   - type: web
-    name: phishshift-backend
+    name: phishshift
     runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && cd frontend && npm install && npm run build
     startCommand: gunicorn app:app
     envVars:
       - key: FLASK_DEBUG
@@ -15,20 +13,3 @@ services:
         value: "*"
       - key: SECRET_KEY
         generateValue: true
-
-  # 2. React Vite Frontend Static Site
-  - type: static
-    name: phishshift-frontend
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: phishshift-backend
-          property: host

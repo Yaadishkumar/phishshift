@@ -14,7 +14,7 @@ Features:
 
 import os
 import logging
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from detector import scan_message, baseline_detector, ml_detector
 import db
@@ -38,10 +38,19 @@ CORS(app, resources={r"/*": {"origins": allowed_origins}})
 # Initialize SQLite database on startup
 db.init_db()
 
+# Resolve frontend distribution directory for full-stack single-URL hosting
+FRONTEND_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+)
+if not os.path.exists(FRONTEND_DIST):
+    FRONTEND_DIST = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "frontend", "dist")
+    )
 
-@app.route("/", methods=["GET"])
-def index_root():
-    """Service status check at root."""
+
+@app.route("/api", methods=["GET"])
+def api_root():
+    """Service status check for API."""
     return jsonify({
         "service": "PhishShift Message Risk Scanner API",
         "status": "online",
@@ -224,6 +233,34 @@ def get_stats():
     except Exception as e:
         logger.exception("Error fetching stats")
         return jsonify({"success": False, "error": "Failed to retrieve statistics."}), 500
+
+
+# --------------------------------------------------------------------------
+# Full-Stack Single-URL Routing (serves React SPA & static assets)
+# --------------------------------------------------------------------------
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    """Serves the compiled React frontend for full-stack single-URL deployment."""
+    # Pass through unhandled API paths with 404 JSON
+    if path.startswith("api/"):
+        return jsonify({"success": False, "error": f"API endpoint '/{path}' not found."}), 404
+
+    # If requested static asset exists in dist (assets/*.js, assets/*.css, favicon.svg, etc.)
+    target_file = os.path.join(FRONTEND_DIST, path)
+    if path and os.path.exists(target_file) and os.path.isfile(target_file):
+        return send_from_directory(FRONTEND_DIST, path)
+
+    # Otherwise serve index.html for React SPA
+    index_html = os.path.join(FRONTEND_DIST, "index.html")
+    if os.path.exists(index_html):
+        return send_from_directory(FRONTEND_DIST, "index.html")
+
+    return jsonify({
+        "service": "PhishShift Message Risk Scanner API",
+        "status": "online",
+        "message": "Frontend build not detected. Please run npm run build in frontend."
+    }), 200
 
 
 if __name__ == "__main__":
